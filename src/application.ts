@@ -3,8 +3,13 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
+import {
+  AuthenticationComponent,
+  registerAuthenticationStrategy
+} from '@loopback/authentication';
+import {SecuritySpecEnhancer} from '@loopback/authentication-jwt';
 import {BootMixin} from '@loopback/boot';
-import {ApplicationConfig} from '@loopback/core';
+import {ApplicationConfig, createBindingFromClass} from '@loopback/core';
 import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {
@@ -12,10 +17,10 @@ import {
   RestExplorerComponent
 } from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
-import multer from 'multer';
 import path from 'path';
-import {FILE_UPLOAD_SERVICE, STORAGE_DIRECTORY} from './keys';
+import {STORAGE_DIRECTORY} from './keys';
 import {MySequence} from './sequence';
+import {MyJWTAuthenticationStrategy} from './strategies';
 
 export {ApplicationConfig};
 
@@ -37,8 +42,11 @@ export class MlCloudDDoSApiCapturesApplication extends BootMixin(
     });
     this.component(RestExplorerComponent);
 
-    // Configure file upload with multer options
-    this.configureFileUpload(options.fileStorageDirectory);
+    this.mountAuthSystem();
+    // Upload files to `/.sandbox/` by default
+    this.bind(STORAGE_DIRECTORY).to(
+      options.fileStorageDirectory ?? path.join(__dirname, '../.sandbox'),
+    );
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
@@ -52,23 +60,9 @@ export class MlCloudDDoSApiCapturesApplication extends BootMixin(
     };
   }
 
-  /**
-   * Configure `multer` options for file upload
-   */
-  protected configureFileUpload(destination?: string) {
-    // Upload files to `./dist/.sandbox/` by default
-    destination = destination ?? path.join(__dirname, '.sandbox');
-    this.bind(STORAGE_DIRECTORY).to(destination);
-    const multerOptions: multer.Options = {
-      storage: multer.diskStorage({
-        destination,
-        // Use the original file name as is
-        filename: (req, file, cb) => {
-          cb(null, file.originalname);
-        },
-      }),
-    };
-    // Configure the file upload service with multer options
-    this.configure(FILE_UPLOAD_SERVICE).to(multerOptions);
+  private mountAuthSystem() {
+    this.component(AuthenticationComponent);
+    this.add(createBindingFromClass(SecuritySpecEnhancer));
+    registerAuthenticationStrategy(this, MyJWTAuthenticationStrategy);
   }
 }

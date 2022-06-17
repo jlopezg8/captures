@@ -1,17 +1,16 @@
-// Copyright IBM Corp. and LoopBack contributors 2020. All Rights Reserved.
+// Copyright IBM Corp., LoopBack contributors, and jlopezg8 <jlopezg8@gmail.com>
+// 2022. All Rights Reserved.
 // Node module: @loopback/example-file-transfer
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
 import {BindingKey} from '@loopback/core';
-import {FileUploadService} from './types';
+import {FileService} from './services';
 
 /**
- * Binding key for the file upload service
+ * Binding key for the file service
  */
-export const FILE_UPLOAD_SERVICE = BindingKey.create<FileUploadService>(
-  'services.FileUpload',
-);
+export const FILE_SERVICE = BindingKey.create<FileService>('services.File');
 
 /**
  * Binding key for the storage directory
