@@ -4,8 +4,8 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-//import {authenticate} from '@loopback/authentication';
-import {inject} from '@loopback/core';
+import {authenticate} from '@loopback/authentication';
+import {inject, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {
   get,
@@ -17,17 +17,16 @@ import {
   requestBody
 } from '@loopback/rest';
 import {SecurityBindings, securityId, UserProfile} from '@loopback/security';
-import {FILE_SERVICE} from '../keys';
 import {Capture} from '../models';
 import {CaptureRepository} from '../repositories';
 import {FileService} from '../services';
 
-//@authenticate('jwt')
+@authenticate('jwt')
 export class CaptureController {
   constructor(
     @repository(CaptureRepository) private captureRepository: CaptureRepository,
-    @inject(FILE_SERVICE) private fileService: FileService,
-    @inject(SecurityBindings.USER, {optional: true}) private userProfile: UserProfile,
+    @service(FileService) private fileService: FileService,
+    @inject(SecurityBindings.USER) private userProfile: UserProfile,
   ) { }
 
   @post('/captures', {
@@ -39,18 +38,24 @@ export class CaptureController {
     // however lb4 does not validate an empty value is sent.
     @requestBody.file(/*{required: true}*/) request: Request,
   ): Promise<void> {
-    const uploadedFile = await this.fileService.upload(request, 'file');
+    const userId = this.userProfile[securityId];
+    const timestamp = new Date().toISOString();
+    const filePath = `${userId}_${timestamp.replace(/[:.]/g, '-')}.json`;
+    await this.fileService.upload(request, {
+      fieldName: 'file',
+      filePath,
+    });
     await this.captureRepository.create({
-      filepath: uploadedFile.path,
-      created_by: this.userProfile[securityId],
-      datetime: new Date().toISOString(),
+      filePath,
+      createdBy: userId,
+      timestamp,
     });
   }
 
   @get('/captures', {
     responses: {
       200: {
-        description: 'All uploaded captures filenames',
+        description: 'The metadata of the captures uploaded by the user',
         content: {
           'application/json': {
             schema: {type: 'array', items: {'x-ts-type': Capture}},
@@ -59,25 +64,25 @@ export class CaptureController {
       },
     },
   })
-  async listCaptures() {
+  async listMine() {
     return this.captureRepository.find({
-      where: {created_by: this.userProfile[securityId]},
+      where: {createdBy: this.userProfile[securityId]},
     });
   }
 
-  @get('/captures/{filename}')
+  @get('/captures/{id}')
   @oas.response.file()
-  async downloadCapture(
-    @param.path.string('filename'/*, {required: true}*/) filename: string,
+  async download(
+    @param.path.string('id') id: string,
   ) {
     const capture = await this.captureRepository.findOne({
       where: {
-        and: [{created_by: this.userProfile[securityId]}, {filepath: filename}],
+        and: [{createdBy: this.userProfile[securityId]}, {_id: id}],
       },
     });
     if (capture == null) {
-      throw new HttpErrors.NotFound('Capture not found');
+      throw new HttpErrors.NotFound();
     }
-    return this.fileService.download(filename);
+    return this.fileService.download(capture.filePath);
   }
 }

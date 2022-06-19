@@ -13,19 +13,19 @@ export class Capture extends Entity {
     type: 'string',
     required: true,
   })
-  filepath: string;
+  filePath: string;
 
   @property({
     type: 'string',
     required: true,
   })
-  created_by: string;
+  createdBy: string;
 
   @property({
     type: 'date',
     required: true,
   })
-  datetime: string;
+  timestamp: string;
 
 
   constructor(data?: Partial<Capture>) {

@@ -5,12 +5,6 @@
 // License text available at https://opensource.org/licenses/MIT
 
 import {BindingKey} from '@loopback/core';
-import {FileService} from './services';
-
-/**
- * Binding key for the file service
- */
-export const FILE_SERVICE = BindingKey.create<FileService>('services.File');
 
 /**
  * Binding key for the storage directory

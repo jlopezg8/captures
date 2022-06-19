@@ -1,6 +1,6 @@
 import {AuthenticationStrategy} from '@loopback/authentication';
 import {HttpErrors, Request} from '@loopback/rest';
-import {UserProfile} from '@loopback/security';
+import {securityId, UserProfile} from '@loopback/security';
 import fetch from 'node-fetch';
 
 require('dotenv').config();
@@ -15,7 +15,9 @@ export class MyJWTAuthenticationStrategy implements AuthenticationStrategy {
       {headers: authHeaderValue ? {Authorization: authHeaderValue} : undefined}
     );
     if (response.ok) {
-      return await response.json() as UserProfile;
+      const userProfile = await response.json() as UserProfile;
+      userProfile[securityId] = userProfile.id;
+      return userProfile;
     } else {
       throw HttpErrors(response.status, response.statusText, response);
     }
