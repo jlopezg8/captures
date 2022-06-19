@@ -5,7 +5,7 @@ import {Capture, CaptureRelations} from '../models';
 
 export class CaptureRepository extends DefaultCrudRepository<
   Capture,
-  typeof Capture.prototype._id,
+  typeof Capture.prototype.id,
   CaptureRelations
 > {
   constructor(

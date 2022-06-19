@@ -77,7 +77,7 @@ export class CaptureController {
   ) {
     const capture = await this.captureRepository.findOne({
       where: {
-        and: [{createdBy: this.userProfile[securityId]}, {_id: id}],
+        and: [{createdBy: this.userProfile[securityId]}, {id}],
       },
     });
     if (capture == null) {
